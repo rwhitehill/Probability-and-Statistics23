@@ -164,6 +164,13 @@ class NORMAL():
         
     def pdf(self,x):
         return np.exp(-(x-self.mu)**2.0/2.0/self.sig**2.0)/np.sqrt(2.0*np.pi*self.sig**2.0)
+    
+    def cdf(self,x):
+        return scint.quad(self.pdf,self.min,min(x,self.max))[0]
+    
+    def percentile(self,p):
+        func = lambda x: self.cdf(x) - p
+        return sciop.root_scalar(func,bracket=[self.min,self.max]).root
 
 
 ###---Exponential---###
@@ -207,30 +214,117 @@ class GAMMA():
         self.alfa = alfa
         self.beta = beta
         
-        self.min = 0
-        self.max = np.inf
-        
         self.exp_val = alfa*beta
         self.var     = alfa*beta**2.0
         self.std     = np.sqrt(self.var)
+        
+        self.min = 0
+        self.max = self.exp_val + 20.0*self.std #np.inf
         
     def pdf(self,x):
         if x >= self.min:
             return x**(self.alfa-1.0)*np.exp(-x/self.beta)/gamma(self.alfa)/self.beta**self.alfa
         else:
             return 0
+    
+    def cdf(self,x):
+        return scint.quad(self.pdf,self.min,min(x,self.max))[0]
         
+    def percentile(self,p):
+        func = lambda x: self.cdf(x) - p
+        return sciop.root_scalar(func,bracket=[self.min,self.max]).root
+    
+###---Weibull---###
+class WEIBULL():
+    
+    def __init__(self,alfa,beta,gam=0.0):
+        self.alfa = alfa
+        self.beta = beta
+        self.gam  = gam
         
-def continuous_cdf(rv,x):
-    return scint.quad(rv.pdf,rv.min,min(x,rv.max))[0]
-
-def percentile(rv,p):
-    func = lambda x: continuous_cdf(rv,x) - p
-    return sciop.root_scalar(func,bracket=[rv.min,rv.max]).root
+        self.exp_val = beta*gamma(1.0+1.0/alfa) + gam
+        self.var     = beta**2.0*(gamma(1.0+2.0/alfa)-gamma(1.0+1.0/alfa))
+        self.std     = np.sqrt(self.var)
         
+        self.min = gam
+        self.max = self.exp_val + 20.0*self.std #np.inf
         
+    def pdf(self,x):
+        if x >= self.min:
+            return self.alfa*(x-self.gam)**(self.alfa-1.0)*np.exp(-((x-self.gam)/self.beta)**self.alfa)/self.beta**self.alfa
+        else:
+            return 0
+    
+    def cdf(self,x):
+        if x < self.min:
+            return 0
+        else:
+            return 1.0 - np.exp(-((x-self.gam)/self.beta)**self.alfa)
         
+    def percentile(self,p):
+        func = lambda x: self.cdf(x) - p
+        return sciop.root_scalar(func,bracket=[self.min,self.max]).root
+      
+###---Lognormal---###
+class LOGNORMAL():
+    
+    def __init__(self,mu,sig,z_max=10.0):
+        self.mu  = mu
+        self.sig = sig
         
+        self.exp_val = np.exp(mu+sig**2.0/2.0) 
+        self.var     = np.exp(2.0*mu+sig**2.0)*(np.exp(sig**2.0)-1.0)
+        self.std     = np.sqrt(self.var)
+            
+        self.min = 1e-10
+        self.max = mu + z_max*self.std
+        
+    def pdf(self,x):
+        if x < self.min:
+            return 0
+        else:
+            return np.exp(-(np.log(x) - self.mu)**2.0/2.0/self.sig**2.0)
+    
+    def cdf(self,x):
+        Z = NORMAL(0.0,1.0)
+        return Z.cdf((np.log(x) - self.mu)/self.sig)
+    
+    def percentile(self,p):
+        func = lambda x: self.cdf(x) - p
+        return sciop.root_scalar(func,bracket=[self.min,self.max]).root
+    
+    
+###---Beta---###
+class BETA():
+    
+    def __init__(self,alfa,beta,A,B):
+        self.alfa = alfa
+        self.beta = beta
+        self.A    = A
+        self.B    = B
+        
+        self.exp_val = A + (B-A)*alfa/(alfa+beta)
+        self.var     = (B-A)**2.0*alfa*beta/(alfa+beta)**2.0/(alfa+beta+1.0)
+        self.std     = np.sqrt(self.var)
+        
+        self.min = A
+        self.max = B
+    
+    def pdf(self,x):
+        L = self.B - self.A
+        return 1.0/L*gamma(self.alfa+self.beta)/gamma(self.alfa)/gamma(self.beta)*((x-self.A)/L)**(self.alfa-1.0)*((self.B-x)/L)**(self.beta-1.0)
+    
+    def cdf(self,x):
+        if x >= self.A or x <= self.B:
+            return scint.quad(self.pdf,self.min,min(x,self.max))[0]
+        else:
+            return 0
+    
+    def percentile(self,p):
+        func = lambda x: self.cdf(x) - p
+        return sciop.root_scalar(func,bracket=[self.min,self.max]).root
+        
+    
         
 
             
