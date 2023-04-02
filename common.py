@@ -376,4 +376,8 @@ class T():
             return 0
         else:
             return sciop.root_scalar(func,bracket=[0,self.max]).root
+        
+    def t_critical(self,CL):
+        alfa = 1-CL
+        return self.percentile(1-alfa/2)
             
