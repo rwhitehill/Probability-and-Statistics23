@@ -323,8 +323,57 @@ class BETA():
     def percentile(self,p):
         func = lambda x: self.cdf(x) - p
         return sciop.root_scalar(func,bracket=[self.min,self.max]).root
-        
-    
-        
 
+    
+###---Chi2---###
+class CHI2():
+    
+    def __init__(self,nu):
+        self.X = GAMMA(nu/2,2)
+        
+        self.exp_val = self.X.exp_val
+        self.var     = self.X.var
+        self.std     = np.sqrt(self.var)
+        
+    def pdf(self,x):
+        return self.X.pdf(x)
+    
+    def cdf(self,x):
+        return self.X.cdf(x)
+    
+    def percentile(self,p):
+        return self.X.percentile(p)
+
+
+###---t Distribution---###
+class T():
+    
+    def __init__(self,nu):
+        self.exp_val = 0
+        self.var     = nu/(nu-2)
+        
+        self.nu = nu
+        
+        self.min = -10*self.var
+        self.max =  10*self.var
+        
+    def pdf(self,x):
+        return gamma((self.nu+1)/2)*(1+x**2/self.nu)**(-(self.nu+1)/2)/np.sqrt(self.nu*np.pi)/gamma(self.nu/2)
+        
+    def cdf(self,x):
+        if x < self.min:
+            return 0
+        elif x > self.max:
+            return 1
+        else:
+            return scint.quad(self.pdf,self.min,x)[0]
+        
+    def percentile(self,p):
+        func = lambda x: self.cdf(x) - p
+        if p < 0.5:
+            return sciop.root_scalar(func,bracket=[self.min,0]).root
+        elif p == 0.5:
+            return 0
+        else:
+            return sciop.root_scalar(func,bracket=[0,self.max]).root
             
