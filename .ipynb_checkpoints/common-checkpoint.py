@@ -4,7 +4,8 @@ import numpy as np
 import math
 import scipy.optimize as sciop
 import scipy.integrate as scint
-from scipy.special import gamma
+from scipy.special import gamma,beta
+import scipy.stats as scistats
 
 #############################
 # NOTE: CDFs return P(X<=x) #
@@ -380,4 +381,37 @@ class T():
     def t_critical(self,CL):
         alfa = 1-CL
         return self.percentile(1-alfa/2)
-            
+    
+    
+###---f Distribution---###
+class F():
+    
+    def __init__(self,nu1,nu2):
+        self.X = scistats.f(nu1,nu2)
+        
+    def pdf(self,x):
+        return self.X.pdf(x)
+    
+    def cdf(self,x):
+        return self.X.cdf(x)
+        
+    def percentile(self,p):
+        return self.X.ppf(p)
+    
+    
+###---Studentized Range Distribution---###
+class Q():
+    
+    def __init__(self,p1,p2):
+        self.X = scistats.studentized_range(p1,p2)
+        
+    def pdf(self,x):
+        return self.X.pdf(x)
+    
+    def cdf(self,x):
+        return self.X.cdf(x)
+        
+    def percentile(self,p):
+        return self.X.ppf(p)
+        
+        
